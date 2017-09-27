@@ -37,18 +37,20 @@ int ServerHA::ServerHAinit(){
 
     listen(socket_desc, 20);
 
+    cout << "Escuchando" << endl;
     c = sizeof(struct sockaddr_in);
-    while ((client_sock = accept(socket_desc, (struct sockaddr*)&client, (socklen_t*)&c))) {
-        cout << "Escuchando" << endl;
+    while ((client_sock = accept(socket_desc, (struct sockaddr*)&client, (socklen_t*)&c)) != -1) {
+
         cout << "Cliente aceptado" << endl;
         pthread_t sniffer_thread;
-        new_sock = static_cast<int *>(malloc(1));
+        //new_sock = static_cast<int *>(malloc(1));
         *new_sock = client_sock;
 
         if (pthread_create(&sniffer_thread, NULL, connection_handler, (void *) new_sock) < 0) {
             cout << "Hilo no creado" << endl;
             return 1;
         }
+        cout << "Hilo craeado" << endl;
     }
     if (client_sock < 0){
         cout << "Cliente no aceptado" << endl;
@@ -61,7 +63,7 @@ int ServerHA::ServerHAinit(){
     int sock = *(int*)socket_desc;
     int read_size;
     char* message, clientMessage[2000];
-    while((read_size = recv(sock, clientMessage, 2000, 0)) > 0)
+    while((read_size = static_cast<int>(recv(sock, clientMessage, 2000, 0))) != 0)
     {
         rmRef_h instance = interpretMessage(clientMessage);
         MemoryManager* storage = MemoryManager::getInstance();
@@ -128,16 +130,19 @@ rmRef_h ServerHA::interpretMessage(char * clientMessage){
                 key = (char *) word.c_str();
                 instance.key = key;
                 type++;
+                i++;
             }if(type == 1){
                 int* value;
                 value = (int*) word.c_str();
                 instance.value = value;
                 type++;
+                i++;
             }if(type == 2){
                 int value_size;
-                value_size = (int)word.c_str();
+                value_size = atoi(word.c_str());
                 instance.value_size = value_size;
                 type++;
+                i++;
             }
 
         }

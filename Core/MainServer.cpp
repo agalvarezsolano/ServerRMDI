@@ -37,25 +37,26 @@ int MainServer::MainServerInit()
         cout << "Error en Main Bind" << endl;
         return 1;
     }
-    cout << "Escuchando" << endl;
+
 
     listen(socket_desc, 20);
 
     c = sizeof(struct sockaddr_in);
 
+    cout << "Escuchando" << endl;
     c = sizeof(struct sockaddr_in);
-    while ((client_sock = accept(socket_desc, (struct sockaddr*)&client, (socklen_t*)&c)))
-    {
+    while ((client_sock = accept(socket_desc, (struct sockaddr*)&client, (socklen_t*)&c)) != -1) {
+
         cout << "Cliente aceptado" << endl;
         pthread_t sniffer_thread;
-        //new_sock = malloc(1);
-        //*new_sock = client_sock;
-        cout << "hola" << endl;
+        //new_sock = static_cast<int *>(malloc(1));
+        *new_sock = client_sock;
 
-        if (pthread_create(&sniffer_thread, NULL, connection_handler,(void*) client_sock) > 0) {
+        if (pthread_create(&sniffer_thread, NULL, connection_handler, (void *) new_sock) < 0) {
             cout << "Hilo no creado" << endl;
             return 1;
         }
+        cout << "Hilo craeado" << endl;
     }
     if (client_sock < 0)
     {
@@ -67,56 +68,61 @@ int MainServer::MainServerInit()
 }
 
 void* MainServer::connection_handler(void *socket_desc) {
-    int sock = *(int*)socket_desc;
     cout << "hello" << endl;
+
+    int* sock = (int*)socket_desc;
 
     int read_size;
     char* message, clientMessage[2000];
-    read_size = recv(sock, clientMessage, 2000, 0);
-    while(read_size > 0)
+
+    while((read_size = recv(*sock, clientMessage, 2000, 0)) > 0)
     {
         rmRef_h instance = interpretMessage(clientMessage);
-        MemoryManager* storage = MemoryManager::getInstance();
-        if(storage->mainMemory.findKey(instance.key)) {
+        if(clientMessage[0] != 'm') {
+            MemoryManager *storage = MemoryManager::getInstance();
+            if (storage->mainMemory.findKey(instance.key)) {
 
-            if (clientMessage[0] == 'n') {
-                storage->mainMemory.insertFirst(instance);
-                storage->cacheMemory.insertFirst(instance);
-                storage->HAMemory.insertFirst(instance);
-                cout << "New con exito" << endl;
-                message = '#' + message;
-                write(sock,message,strlen(message));
-                break;
+                if (clientMessage[0] == 'n') {
+                    storage->mainMemory.insertFirst(instance);
+                    storage->cacheMemory.insertFirst(instance);
+                    storage->HAMemory.insertFirst(instance);
+                    cout << "New con exito" << endl;
+                    message = '#' + message;
+                    write(*sock, message, strlen(message));
+                    break;
 
-            }
-            if (clientMessage[0] == 'g') {
-                if(storage->cacheMemory.findKey(instance.key)){
-                    instance = storage->cacheMemory.getRef(instance.key);
-                    message = createdMessage(instance);
-                    write(sock,message,strlen(message));
-                }else{
-                    instance = storage->mainMemory.getRef(instance.key);
-                    storage->cacheMemory.insertFirstCache(instance);
-                    message = createdMessage(instance);
-                    write(sock,message,strlen(message));
                 }
-                break;
+                if (clientMessage[0] == 'g') {
+                    if (storage->cacheMemory.findKey(instance.key)) {
+                        instance = storage->cacheMemory.getRef(instance.key);
+                        message = createdMessage(instance);
+                        write(*sock, message, strlen(message));
+                    } else {
+                        instance = storage->mainMemory.getRef(instance.key);
+                        storage->cacheMemory.insertFirstCache(instance);
+                        message = createdMessage(instance);
+                        write(*sock, message, strlen(message));
+                    }
+                    break;
 
-            }
-            if (clientMessage[0] == 'd') {
-                storage->mainMemory.deleteKey(instance.key);
-                storage->cacheMemory.deleteKey(instance.key);
-                storage->HAMemory.deleteKey(instance.key);
-                cout << "Delete con exito" << endl;
+                }
+                if (clientMessage[0] == 'd') {
+                    storage->mainMemory.deleteKey(instance.key);
+                    storage->cacheMemory.deleteKey(instance.key);
+                    storage->HAMemory.deleteKey(instance.key);
+                    cout << "Delete con exito" << endl;
+                    message = '#' + message;
+                    write(*sock, message, strlen(message));
+                    break;
+                }
+            } else {
+                cout << "Key ya existente" << endl;
                 message = '#' + message;
-                write(sock,message,strlen(message));
+                write(*sock, message, strlen(message));
                 break;
             }
         }else{
-            cout << "Key ya existente" << endl;
-            message = '#' + message;
-            write(sock,message,strlen(message));
-            break;
+
         }
     }
 }
@@ -142,16 +148,19 @@ rmRef_h MainServer::interpretMessage(char *clientMessage){
                 key = (char *) word.c_str();
                 instance.key = key;
                 type++;
+                i++;
             }if(type == 1){
                 int* value;
                 value = (int*) word.c_str();
                 instance.value = value;
                 type++;
+                i++;
             }if(type == 2){
                 int value_size;
-                value_size = (int)word.c_str();
+                value_size =  atoi(word.c_str());
                 instance.value_size = value_size;
                 type++;
+                i++;
             }
 
         }

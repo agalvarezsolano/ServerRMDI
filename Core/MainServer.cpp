@@ -1,23 +1,19 @@
-//
-// Created by adrian on 24/09/17.
-//
+
 
 #include <sys/socket.h>
 #include <iostream>
 #include <netinet/in.h>
 #include "MainServer.h"
-#include "../Structures/rmRef_h.h"
-#include "memoryManager.h"
 #include <string.h>
 #include <unistd.h>
 
 using namespace std;
-
+///@brief constructor vacio
 MainServer::MainServer()
 {
 
 }
-
+///@brief metodo que inicia el server y abre el socket
 int MainServer::MainServerInit()
 {
     int socket_desc , client_sock , c , *new_sock;
@@ -56,7 +52,7 @@ int MainServer::MainServerInit()
             cout << "Hilo no creado" << endl;
             return 1;
         }
-        cout << "Hilo craeado" << endl;
+        cout << "Hilo creado" << endl;
     }
     if (client_sock < 0)
     {
@@ -66,16 +62,13 @@ int MainServer::MainServerInit()
 
     return 0;
 }
-
+///@brief metodo que se crea llama cada vez que entra un cliente al server
 void* MainServer::connection_handler(void *socket_desc) {
-    cout << "hello" << endl;
-
-    int* sock = (int*)socket_desc;
-
+    int sock = *(int*)socket_desc;
     int read_size;
     char* message, clientMessage[2000];
 
-    while((read_size = recv(*sock, clientMessage, 2000, 0)) > 0)
+    while((read_size = recv(sock, clientMessage, 2000, 0)) > 0)
     {
         rmRef_h instance = interpretMessage(clientMessage);
         if(clientMessage[0] != 'm') {
@@ -88,22 +81,22 @@ void* MainServer::connection_handler(void *socket_desc) {
                     storage->HAMemory.insertFirst(instance);
                     cout << "New con exito" << endl;
                     message = '#' + message;
-                    write(*sock, message, strlen(message));
-                    break;
+                    write(sock, message, strlen(message));
+
 
                 }
                 if (clientMessage[0] == 'g') {
                     if (storage->cacheMemory.findKey(instance.key)) {
                         instance = storage->cacheMemory.getRef(instance.key);
                         message = createdMessage(instance);
-                        write(*sock, message, strlen(message));
+                        write(sock, message, strlen(message));
                     } else {
                         instance = storage->mainMemory.getRef(instance.key);
                         storage->cacheMemory.insertFirstCache(instance);
                         message = createdMessage(instance);
-                        write(*sock, message, strlen(message));
+                        write(sock, message, strlen(message));
                     }
-                    break;
+
 
                 }
                 if (clientMessage[0] == 'd') {
@@ -112,21 +105,22 @@ void* MainServer::connection_handler(void *socket_desc) {
                     storage->HAMemory.deleteKey(instance.key);
                     cout << "Delete con exito" << endl;
                     message = '#' + message;
-                    write(*sock, message, strlen(message));
-                    break;
+                    write(sock, message, strlen(message));
+
                 }
             } else {
                 cout << "Key ya existente" << endl;
-                message = '#' + message;
-                write(*sock, message, strlen(message));
-                break;
+                message = 'e' + message;
+                write(sock, message, strlen(message));
+
             }
         }else{
 
         }
     }
 }
-
+///@brief interpreta el mensaje enviado por el cliente
+///@tparam clientMessage mensaje del cliente
 rmRef_h MainServer::interpretMessage(char *clientMessage){
     rmRef_h instance;
     instance.referencias = 1;
@@ -181,11 +175,19 @@ rmRef_h MainServer::interpretMessage(char *clientMessage){
 
     return instance;
 }
-
-
-
+///@brief crea el mensaje de vuelta al cliente
+///@tparam bd instancia que se le va a enviar al cliente
 char* MainServer::createdMessage(rmRef_h bd) {
-    char* message = nullptr;
-    sprintf(message, "%s@%p@%d@#", bd.key, bd.value, bd.value_size);
+    char* message;
+    string  word;
+    string m,p,q,o;
+    m = bd.key;
+    word = word + m + '@';
+    int* s = (int *)bd.value;
+    o = *s;
+    word = word +  o + '@';
+    q = bd.value_size;
+    word = word + q + '@' +'#';
+    message =(char*) word.c_str();
     return message;
 }

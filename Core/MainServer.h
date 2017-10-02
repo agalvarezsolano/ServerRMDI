@@ -1,6 +1,4 @@
-//
-// Created by adrian on 24/09/17.
-//
+
 
 #ifndef REMOTEMEMORY_MAINSERVER_H
 #define REMOTEMEMORY_MAINSERVER_H
@@ -10,12 +8,8 @@
 
 class MainServer{
 public:
+    int ip = 8888;
     MemoryManager *storage;
-    int socket_desc , client_sock , c;
-    int *new_sock;
-
-    struct sockaddr_in *server , *client;
-
     MainServer();
     int MainServerInit();
     static void *connection_handler(void * socket_desc);

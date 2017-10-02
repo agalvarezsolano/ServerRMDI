@@ -1,11 +1,8 @@
-//
-// Created by adrian on 24/09/17.
-//
 
 #include "memoryManager.h"
 
 
-
+///@brief Singleton que tiene las instancias de las memorias de los server
 MemoryManager* MemoryManager::instance = 0;
 
 MemoryManager *MemoryManager::getInstance() {

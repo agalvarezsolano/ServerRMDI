@@ -1,6 +1,3 @@
-//
-// Created by adrian on 24/09/17.
-//
 
 #ifndef REMOTEMEMORY_MEMORYMANAGER_H
 #define REMOTEMEMORY_MEMORYMANAGER_H

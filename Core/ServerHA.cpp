@@ -1,6 +1,3 @@
-//
-// Created by adrian on 25/09/17.
-//
 
 #include <sys/socket.h>
 #include <iostream>
@@ -12,21 +9,20 @@
 using namespace std;
 
 
-
+///@brief constructor vacio
 ServerHA::ServerHA(){}
-
+///@brief metodo que inicia el server y abre el socket
 int ServerHA::ServerHAinit(){
-
-    this->socket_desc = socket(AF_INET, SOCK_STREAM,0);
+    int socket_desc , client_sock , c , *new_sock;
+    struct sockaddr_in server , client;
+    socket_desc = socket(AF_INET, SOCK_STREAM,0);
     if (socket_desc == -1){
         cout << "Error al crea el socket del HA Server" << endl;
     }
     cout << "HA Socket creado" << endl;
-    cout << "HA Socket creado" << endl;
-    server->sin_family = AF_INET;
-    cout << "HA Socket creado" << endl;
-    server->sin_port = htons(5555);
-    server->sin_addr.s_addr = INADDR_ANY;
+    server.sin_family = AF_INET;
+    server.sin_port = htons(5555);
+    server.sin_addr.s_addr = INADDR_ANY;
 
     if(bind(socket_desc,(struct sockaddr*)&server, sizeof(server)) < 0)
     {
@@ -50,7 +46,7 @@ int ServerHA::ServerHAinit(){
             cout << "Hilo no creado" << endl;
             return 1;
         }
-        cout << "Hilo craeado" << endl;
+        cout << "Hilo creado" << endl;
     }
     if (client_sock < 0){
         cout << "Cliente no aceptado" << endl;
@@ -58,57 +54,61 @@ int ServerHA::ServerHAinit(){
     }
     return 0;
 }
-
+///@brief metodo que se crea llama cada vez que entra un cliente al server
  void* ServerHA::connection_handler(void *socket_desc){
     int sock = *(int*)socket_desc;
     int read_size;
     char* message, clientMessage[2000];
-    while((read_size = static_cast<int>(recv(sock, clientMessage, 2000, 0))) != 0)
+
+    while((read_size = recv(sock, clientMessage, 2000, 0)) > 0)
     {
         rmRef_h instance = interpretMessage(clientMessage);
-        MemoryManager* storage = MemoryManager::getInstance();
-        if(storage->HAMemory.findKey(instance.key)) {
+        if(clientMessage[0] != 'm') {
+            MemoryManager *storage = MemoryManager::getInstance();
+            if (storage->HAMemory.findKey(instance.key)) {
 
-            if (clientMessage[0] == 'n') {
-                storage->mainMemory.insertFirst(instance);
-                storage->cacheMemory.insertFirst(instance);
-                storage->HAMemory.insertFirst(instance);
-                cout << "New con exito" << endl;
-                message = '#' + message;
-                write(sock,message,strlen(message));
+                if (clientMessage[0] == 'n') {
+                    storage->mainMemory.insertFirst(instance);
+                    storage->cacheMemory.insertFirst(instance);
+                    storage->HAMemory.insertFirst(instance);
+                    cout << "New con exito" << endl;
+                    message = '#' + message;
+                    write(sock, message, strlen(message));
 
-            }
-            if (clientMessage[0] == 'g') {
-                if(storage->cacheMemory.findKey(instance.key)){
-                    instance = storage->cacheMemory.getRef(instance.key);
-                    message = createdMessage(instance);
-                    write(sock,message,strlen(message));
-                }else{
-                    instance = storage->HAMemory.getRef(instance.key);
-                    storage->cacheMemory.insertFirstCache(instance);
-                    message = createdMessage(instance);
-                    write(sock,message,strlen(message));
                 }
+                if (clientMessage[0] == 'g') {
+                    if (storage->cacheMemory.findKey(instance.key)) {
+                        instance = storage->cacheMemory.getRef(instance.key);
+                        message = createdMessage(instance);
+                        write(sock, message, strlen(message));
+                    } else {
+                        instance = storage->HAMemory.getRef(instance.key);
+                        storage->cacheMemory.insertFirstCache(instance);
+                        message = createdMessage(instance);
+                        write(sock, message, strlen(message));
+                    }
 
-            }
-            if (clientMessage[0] == 'd') {
-                storage->mainMemory.deleteKey(instance.key);
-                storage->cacheMemory.deleteKey(instance.key);
-                storage->HAMemory.deleteKey(instance.key);
-                cout << "Delete con exito" << endl;
+                }
+                if (clientMessage[0] == 'd') {
+                    storage->mainMemory.deleteKey(instance.key);
+                    storage->cacheMemory.deleteKey(instance.key);
+                    storage->HAMemory.deleteKey(instance.key);
+                    cout << "Delete con exito" << endl;
+                    message = '#' + message;
+                    write(sock, message, strlen(message));
+                }
+            } else {
+                cout << "Key ya existente" << endl;
                 message = '#' + message;
-                write(sock,message,strlen(message));
+                write(sock, message, strlen(message));
             }
         }else{
-            cout << "Key ya existente" << endl;
-            message = '#' + message;
-            write(sock,message,strlen(message));
+
         }
     }
-    free(socket_desc);
-    close(sock);
 }
-
+///@brief interpreta el mensaje enviado por el cliente
+///@tparam clientMessage mensaje del cliente
 rmRef_h ServerHA::interpretMessage(char * clientMessage){
     rmRef_h instance;
     instance.referencias = 1;
@@ -163,10 +163,21 @@ rmRef_h ServerHA::interpretMessage(char * clientMessage){
 
     return instance;
 }
-
+///@brief crea el mensaje de vuelta al cliente
+///@tparam bd instancia que se le va a enviar al cliente
 char* ServerHA::createdMessage(rmRef_h bd) {
-    char* message = nullptr;
-    sprintf(message, "%s@%p@%d@#", bd.key, bd.value, bd.value_size);
+    char* message;
+    string  word;
+    string m,p,q,o;
+    m = bd.key;
+    word = word + m + '@';
+    int* s = (int *)bd.value;
+    o = *s;
+    word = word +  o + '@';
+    q = bd.value_size;
+    word = word + q + '@' +'#';
+    message =(char*) word.c_str();
     return message;
 }
+
 

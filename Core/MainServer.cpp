@@ -16,7 +16,7 @@ MainServer::MainServer()
 ///@brief metodo que inicia el server y abre el socket
 int MainServer::MainServerInit()
 {
-    int socket_desc , client_sock , c , *new_sock;
+    int socket_desc , client_sock , c ;
     struct sockaddr_in server , client;
     socket_desc = socket(AF_INET, SOCK_STREAM,0);
     if (socket_desc == -1){
@@ -46,9 +46,9 @@ int MainServer::MainServerInit()
         cout << "Cliente aceptado" << endl;
         pthread_t sniffer_thread;
         //new_sock = static_cast<int *>(malloc(1));
-        *new_sock = client_sock;
-
-        if (pthread_create(&sniffer_thread, NULL, connection_handler, (void *) new_sock) < 0) {
+        //*new_sock = client_sock;
+        this->storage->getInstance()->clientList.insertLast(client_sock);
+        if (pthread_create(&sniffer_thread, NULL, connection_handler, NULL) < 0) {
             cout << "Hilo no creado" << endl;
             return 1;
         }
@@ -64,15 +64,17 @@ int MainServer::MainServerInit()
 }
 ///@brief metodo que se crea llama cada vez que entra un cliente al server
 void* MainServer::connection_handler(void *socket_desc) {
-    int sock = *(int*)socket_desc;
+    MemoryManager *storage = MemoryManager::getInstance();
+    int sock = storage->clientList.getLast();
     int read_size;
     char* message, clientMessage[2000];
 
     while((read_size = recv(sock, clientMessage, 2000, 0)) > 0)
     {
+        cout << "Mensaje recibido" << endl;
         rmRef_h instance = interpretMessage(clientMessage);
+        cout << "Mensaje recibido" << endl;
         if(clientMessage[0] != 'm') {
-            MemoryManager *storage = MemoryManager::getInstance();
             if (storage->mainMemory.findKey(instance.key)) {
 
                 if (clientMessage[0] == 'n') {
@@ -127,6 +129,8 @@ rmRef_h MainServer::interpretMessage(char *clientMessage){
     int i = 1;
     int type;
     type = 0;
+    cout << "Mensaje recibido" << endl;
+
     while (clientMessage[i] != '#'){
         if(clientMessage[0] == 'n'){
             string word;

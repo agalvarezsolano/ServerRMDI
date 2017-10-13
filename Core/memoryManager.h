@@ -4,6 +4,7 @@
 
 
 #include "../Structures/LinkedList.h"
+#include "../Structures/ClientList.h"
 
 class MemoryManager{
 public:
@@ -11,6 +12,7 @@ public:
     LinkedList cacheMemory;
     LinkedList mainMemory;
     LinkedList HAMemory;
+    ClientList clientList;
 private:
     MemoryManager();
     static MemoryManager* instance;

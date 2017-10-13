@@ -5,11 +5,12 @@
 
 
 #include "memoryManager.h"
+#include "../Structures/ClientList.h"
 
 class MainServer{
 public:
     int ip = 8888;
-    MemoryManager *storage;
+    static MemoryManager *storage;
     MainServer();
     int MainServerInit();
     static void *connection_handler(void * socket_desc);

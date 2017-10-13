@@ -22,13 +22,13 @@ void *startServerHA(void*){
 int main() {
 
     pthread_t mainServer;
-    pthread_t serverHA;
+    //pthread_t serverHA;
 
     pthread_create(&mainServer, NULL, &startMainServer, NULL);
-    pthread_create(&serverHA, NULL, &startServerHA, NULL);
+    //pthread_create(&serverHA, NULL, &startServerHA, NULL);
     cout << "Hilos creados" << endl;
     pthread_join(mainServer, NULL);
-    pthread_join(serverHA, NULL);
+    //pthread_join(serverHA, NULL);
 
     return 0;
 }

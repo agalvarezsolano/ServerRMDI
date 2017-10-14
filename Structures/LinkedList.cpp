@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <malloc.h>
 #include "LinkedList.h"
+#include "../Core/GarbageCollector.h"
 
 
 LinkedList::LinkedList()
@@ -36,7 +37,10 @@ void LinkedList::deleteLast()
             current = current->next;
         }
         previous->next= NULL;
+        GarbageCollector gc;
+        gc.start();
     }
+
 }
 ///@brief borra un dato con la clave
 ///@tparam key clave a eliminar
@@ -44,20 +48,19 @@ void LinkedList::deleteKey(char * key)
 {
     if(this->head == NULL) {
         Node *current = this->head;
-        Node *previous;
         while(current->next != NULL){
             if (current->dato.key == key){
                 current->dato.referencias = 0;
             }
-            previous = current;
             current =  current->next;
         }
         if (current->dato.key == key) {
             current->dato.referencias = 0;
         }
         this->size--;
+        GarbageCollector gc;
+        gc.start();
     }
-
 }
 ///@brief libera el espacio de las claves no instanciadas
 void LinkedList::freeMemory()

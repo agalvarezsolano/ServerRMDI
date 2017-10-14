@@ -12,7 +12,6 @@ public:
     LinkedList();
 
     void insertFirst(rmRef_h);
-    void insertLast(rmRef_h);
     bool findKey(char*);
     void deleteKey(char*);
     rmRef_h getRef(char*);

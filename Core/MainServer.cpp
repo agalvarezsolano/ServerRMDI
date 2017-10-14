@@ -25,7 +25,7 @@ int MainServer::MainServerInit()
     cout << "Main Socket creado" << endl;
 
     server.sin_family = AF_INET;
-    server.sin_port = htons(8888);
+    server.sin_port = htons(this->ip);
     server.sin_addr.s_addr = INADDR_ANY;
 
     if(bind(socket_desc,(struct sockaddr*)&server, sizeof(server)) < 0)
@@ -73,14 +73,12 @@ void* MainServer::connection_handler(void *socket_desc) {
     {
         cout << "Mensaje recibido" << endl;
         rmRef_h instance = interpretMessage(clientMessage);
-        cout << "Mensaje recibido" << endl;
         if(clientMessage[0] != 'm') {
             if (storage->mainMemory.findKey(instance.key)) {
 
                 if (clientMessage[0] == 'n') {
                     storage->mainMemory.insertFirst(instance);
                     storage->cacheMemory.insertFirst(instance);
-                    storage->HAMemory.insertFirst(instance);
                     cout << "New con exito" << endl;
                     message = '#' + message;
                     write(sock, message, strlen(message));
@@ -104,7 +102,6 @@ void* MainServer::connection_handler(void *socket_desc) {
                 if (clientMessage[0] == 'd') {
                     storage->mainMemory.deleteKey(instance.key);
                     storage->cacheMemory.deleteKey(instance.key);
-                    storage->HAMemory.deleteKey(instance.key);
                     cout << "Delete con exito" << endl;
                     message = '#' + message;
                     write(sock, message, strlen(message));
@@ -129,7 +126,6 @@ rmRef_h MainServer::interpretMessage(char *clientMessage){
     int i = 1;
     int type;
     type = 0;
-    cout << "Mensaje recibido" << endl;
 
     while (clientMessage[i] != '#'){
         if(clientMessage[0] == 'n'){

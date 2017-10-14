@@ -11,7 +11,6 @@ public:
     static MemoryManager* getInstance();
     LinkedList cacheMemory;
     LinkedList mainMemory;
-    LinkedList HAMemory;
     ClientList clientList;
 private:
     MemoryManager();
